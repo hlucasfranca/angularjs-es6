@@ -1,0 +1,4 @@
+node_modules
+dist
+coverage
+\my-app\dist
