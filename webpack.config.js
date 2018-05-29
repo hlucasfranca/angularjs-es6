@@ -4,37 +4,13 @@
 var webpack = require("webpack");
 var autoprefixer = require("autoprefixer");
 var HtmlWebpackPlugin = require("html-webpack-plugin");
-var ExtractTextPlugin = require("extract-text-webpack-plugin");
+var MiniCssExtractPlugin = require("mini-css-extract-plugin");
 var CopyWebpackPlugin = require("copy-webpack-plugin");
-var JavaScriptObfuscator = require('webpack-obfuscator');
-
-/**
- * Env
- * Get npm lifecycle event to identify the environment
- */
-var ENV = process.env.npm_lifecycle_event;
-var isTest = ENV === "test" || ENV === "test-watch";
-var isProd = ENV === "build";
+var JavaScriptObfuscator = require("webpack-obfuscator");
 
 module.exports = (function makeWebpackConfig() {
-    /**
-     * Config
-     * Reference: http://webpack.github.io/docs/configuration.html
-     * This is the object where all configuration gets set
-     */
     var config = {};
-
-    /**
-     * Entry
-     * Reference: http://webpack.github.io/docs/configuration.html#entry
-     * Should be an empty object if it's generating a test build
-     * Karma will set this when it's a test build
-     */
-    config.entry = isTest
-        ? void 0
-        : {
-              app: "./src/app/app.js"
-          };
+    (config.mode = "development"), (config.entry = { app: "./src/app/app.js" });
 
     /**
      * Output
@@ -42,37 +18,37 @@ module.exports = (function makeWebpackConfig() {
      * Should be an empty object if it's generating a test build
      * Karma will handle setting it up for you when it's a test build
      */
-    config.output = isTest
-        ? {}
-        : {
-              // Absolute output directory
-              path: __dirname + "/dist",
+    // config.output = isTest
+    //     ? {}
+    //     : {
+    //           // Absolute output directory
+    //           path: __dirname + "/dist",
 
-              // Output path from the view of the page
-              // Uses webpack-dev-server in development
-              publicPath: isProd ? "/" : "http://localhost:8080/",
+    //           // Output path from the view of the page
+    //           // Uses webpack-dev-server in development
+    //           publicPath: isProd ? "/" : "http://localhost:8080/",
 
-              // Filename for entry points
-              // Only adds hash in build mode
-              filename: isProd ? "[name].[hash].js" : "[name].bundle.js",
+    //           // Filename for entry points
+    //           // Only adds hash in build mode
+    //           filename: isProd ? "[name].[hash].js" : "[name].bundle.js",
 
-              // Filename for non-entry points
-              // Only adds hash in build mode
-              chunkFilename: isProd ? "[name].[hash].js" : "[name].bundle.js"
-          };
+    //           // Filename for non-entry points
+    //           // Only adds hash in build mode
+    //           chunkFilename: isProd ? "[name].[hash].js" : "[name].bundle.js"
+    //       };
 
     /**
      * Devtool
      * Reference: http://webpack.github.io/docs/configuration.html#devtool
      * Type of sourcemap to use per build type
      */
-    if (isTest) {
-        config.devtool = "inline-source-map";
-    } else if (isProd) {
-        config.devtool = "source-map";
-    } else {
-        config.devtool = "eval-source-map";
-    }
+    //if (isTest) {
+    config.devtool = "inline-source-map";
+    // } else if (isProd) {
+    //     config.devtool = "source-map";
+    // } else {
+    //     config.devtool = "eval-source-map";
+    // }
 
     /**
      * Loaders
@@ -94,32 +70,16 @@ module.exports = (function makeWebpackConfig() {
                 exclude: /node_modules/
             },
             {
-                // CSS LOADER
-                // Reference: https://github.com/webpack/css-loader
-                // Allow loading css through js
-                //
-                // Reference: https://github.com/postcss/postcss-loader
-                // Postprocess your css with PostCSS plugins
                 test: /\.css$/,
-                // Reference: https://github.com/webpack/extract-text-webpack-plugin
-                // Extract css files in production builds
-                //
-                // Reference: https://github.com/webpack/style-loader
-                // Use style-loader in development.
-
-                loader: isTest
-                    ? "null-loader"
-                    : ExtractTextPlugin.extract({
-                          fallbackLoader: "style-loader",
-                          loader: [
-                              {
-                                  loader: "css-loader",
-                                  query: { sourceMap: true }
-                              },
-                              { loader: "postcss-loader" }
-                          ]
-                      })
-            },
+                use: [
+                  { loader: "style-loader" },
+                  { loader: "css-loader" }
+                ]
+              },
+            // {
+            //     test: /\.css$/,
+            //     use: [MiniCssExtractPlugin.loader, "css-loader"]
+            // },
             {
                 // ASSET LOADER
                 // Reference: https://github.com/webpack/file-loader
@@ -144,17 +104,17 @@ module.exports = (function makeWebpackConfig() {
     // https://github.com/deepsweet/istanbul-instrumenter-loader
     // Instrument JS files with istanbul-lib-instrument for subsequent code coverage reporting
     // Skips node_modules and files that end with .spec.js
-    if (isTest) {
-        config.module.rules.push({
-            enforce: "pre",
-            test: /\.js$/,
-            exclude: [/node_modules/, /\.spec\.js$/],
-            loader: "istanbul-instrumenter-loader",
-            query: {
-                esModules: true
-            }
-        });
-    }
+    // if (isTest) {
+    //     config.module.rules.push({
+    //         enforce: "pre",
+    //         test: /\.js$/,
+    //         exclude: [/node_modules/, /\.spec\.js$/],
+    //         loader: "istanbul-instrumenter-loader",
+    //         query: {
+    //             esModules: true
+    //         }
+    //     });
+    // }
 
     /**
      * PostCSS
@@ -169,71 +129,64 @@ module.exports = (function makeWebpackConfig() {
      * Reference: http://webpack.github.io/docs/configuration.html#plugins
      * List: http://webpack.github.io/docs/list-of-plugins.html
      */
-    config.plugins = [
-        new webpack.LoaderOptionsPlugin({
-            test: /\.scss$/i,
-            options: {
-                postcss: {
-                    plugins: [autoprefixer]
-                }
-            }
-        })
-    ];
 
-    // Skip rendering index.html in test mode
-    if (!isTest) {
-        // Reference: https://github.com/ampedandwired/html-webpack-plugin
-        // Render index.html
-        config.plugins.push(
-            new HtmlWebpackPlugin({
-                template: "./src/public/index.html",
-                inject: "body"
-            }),
+    config.plugins = [];
 
-            // Reference: https://github.com/webpack/extract-text-webpack-plugin
-            // Extract css files
-            // Disabled when in test mode or not in build mode
-            new ExtractTextPlugin({
-                filename: "css/[name].css",
-                disable: !isProd,
-                allChunks: true
-            })
-        );
-    }
+    // config.plugins = [
+    //     new webpack.LoaderOptionsPlugin({
+    //         test: /\.scss$/i,
+    //         options: {
+    //             postcss: {
+    //                 plugins: [autoprefixer]
+    //             }
+    //         }
+    //     })
+    // ];
 
-    // Add build specific plugins
-    if (isProd) {
-        config.plugins.push(
+    // // Skip rendering index.html in test mode
+    // if (!isTest) {
+    //     // Reference: https://github.com/ampedandwired/html-webpack-plugin
+    //     // Render index.html
+    //     config.plugins.push(
+    //         new HtmlWebpackPlugin({
+    //             template: "./src/public/index.html",
+    //             inject: "body"
+    //         }),
+
+    //         // Reference: https://github.com/webpack/extract-text-webpack-plugin
+    //         // Extract css files
+    //         // Disabled when in test mode or not in build mode
+    //         new MiniCssExtractPlugin({
+    //             filename: "css/[name].css",
+    //             disable: !isProd,
+    //             allChunks: true
+    //         })
+    //     );
+    // }
+
+    // // Add build specific plugins
+    // if (isProd) {
+         config.plugins.push(
             // Reference: http://webpack.github.io/docs/list-of-plugins.html#noerrorsplugin
             // Only emit files when there are no errors
-            new webpack.NoEmitOnErrorsPlugin(),
+            //            new webpack.NoEmitOnErrorsPlugin(),
+            // // Copy assets from the public folder
+            // // Reference: https://github.com/kevlened/copy-webpack-plugin
+            // new CopyWebpackPlugin([
+            //     {
+            //         from: __dirname + "/src/public"
+            //     }
+            // ]),
+            new webpack.NamedModulesPlugin(),
+            new webpack.HotModuleReplacementPlugin()
+            //new JavaScriptObfuscator()
+         );
+    // }
 
-            // Reference: http://webpack.github.io/docs/list-of-plugins.html#uglifyjsplugin
-            // Minify all javascript, switch loaders to minimizing mode
-            new webpack.optimize.UglifyJsPlugin({
-                sourceMap: true
-            }),
-
-            // Copy assets from the public folder
-            // Reference: https://github.com/kevlened/copy-webpack-plugin
-            new CopyWebpackPlugin([
-                {
-                    from: __dirname + "/src/public"
-                }
-            ]),
-            new JavaScriptObfuscator()
-        );
-    }
-
-    /**
-     * Dev server configuration
-     * Reference: http://webpack.github.io/docs/configuration.html#devserver
-     * Reference: http://webpack.github.io/docs/webpack-dev-server.html
-     */
     config.devServer = {
         contentBase: "./src/public",
-        stats: "minimal",
-        host: "localhost"
+        host: "localhost",
+        hot: true
     };
 
     return config;
